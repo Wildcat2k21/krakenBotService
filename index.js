@@ -666,7 +666,7 @@ async function createNewoffer(state){
         }
 
         // чтение файла картинки оплаты
-        const imgPath = path.join(__dirname, 'Payments', 'payqrcode.jpg');
+        const imgPath = path.join(__dirname, 'payments', 'payqrcode.jpg');
         const imgBuffer = await fs.readFile(imgPath);
 
         //пустые кнопки для подтверждения
