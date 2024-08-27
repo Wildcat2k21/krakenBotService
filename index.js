@@ -34,7 +34,7 @@ String.prototype.format = function () {
 }
 
 //оповещение основных событий
-app.patch('/notify' , (req, res) => {
+app.post('/notify' , (req, res) => {
     const {users} = req.body;
 
     try{
@@ -110,7 +110,7 @@ app.post('/stop', (req, res) => {
 })
 
 //очистка логов 
-app.patch('/logs', async (req, res) => {
+app.post('/logs', async (req, res) => {
     try {
         await fs.writeFile('logs.txt', ''); // Очищаем файл логов
         res.status(200).send('ok');
