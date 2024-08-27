@@ -20,7 +20,7 @@ app.use(express.json());
 
 //основная конфигурация
 const PORT = process.env.PORT || 4040;
-const ADMIN_TELEGRAN_ID = Number(process.env.ADMIN_TELEGRAN_ID) || 1541675946;
+const ADMIN_TELEGRAN_ID = Number(process.env.ADMIN_TELEGRAN_ID);
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 //создаем бота
@@ -42,22 +42,36 @@ app.post('/notify' , (req, res) => {
         users.forEach(user => {
             const userId = user.id;
             const message = user.message;
-            const action = user.action;
+            const control = user.control;
             
             //проверка данных
             if(!userId || !message) throw new Error('');
 
             //управление заявками для администратора
-            if(action === 'offer control'){
+            if(control){
 
-                //оповещение о принятии или отклонении заявки
-                const options = Buttons([[
-                    { text: '✅ Принять', callback_data: 'accept offer' },
-                    { text: '❌ Отклонить', callback_data: 'reject offer' },
-                ]])
+                //управление входящими заявками
+                if(control.action === 'accept offer'){
 
-                bot.sendMessage(userId, message.format(), { reply_markup: options });
-                return
+                    const adminState = userStates.find(state => state.telegramId === ADMIN_TELEGRAN_ID);
+                    if(!adminState) return;
+    
+                    //оповещение о принятии или отклонении заявки
+                    const options = Buttons([[
+                        { text: '✅ Принять', callback_data: 'accept offer' },
+                        { text: '❌ Отклонить', callback_data: 'reject offer' },
+                    ]])
+
+                    //установка действия для администратора
+                    adminState.action = 'accept offer';
+
+                    adminState.data = {
+                        offerToAccept: control.offer_id
+                    }
+
+                    bot.sendMessage(userId, message.format(), { reply_markup: options });
+                    return
+                }
             }
 
             //отправка сообщения пользователю
@@ -233,6 +247,19 @@ bot.on('callback_query', async (query) => {
     if(!state) return;
 
     try{
+
+        //принятие новой заявки
+        if(state.telegramId === ADMIN_TELEGRAN_ID && state.action === 'accept offer' && query.data === 'accept offer' ){
+            await APIserver.ACCEPT_OFFER(state.data.offerToAccept);
+            state.default();
+        }
+
+        //отклонение новой заявки
+        if(state.telegramId === ADMIN_TELEGRAN_ID && state.action === 'accept offer' && query.data === 'reject offer' ){
+            await APIserver.ACCEPT_OFFER(state.data.offerToAccept);
+            state.default();
+        }
+
         //подтверждение оплаты 
         if(query.data === 'confirm payment' && state.offerData){
             // поздравление с новой заявкой

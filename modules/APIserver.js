@@ -9,6 +9,12 @@ class APIserver {
 
     static serverURL = API_SERVER;
 
+    static async ACCEPT_OFFER(offer_id){
+        const response = await axios.patch(`${APIserver.serverURL}/confirm`, {offer_id, status: 'accepted'});
+        
+        return response.data;
+    }
+
     //поиск пользователя
     static async FIND_USER(telegram_id) {
         const response = await axios.get(`${APIserver.serverURL}/data`, {
