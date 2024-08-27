@@ -42,9 +42,23 @@ app.post('/notify' , (req, res) => {
         users.forEach(user => {
             const userId = user.id;
             const message = user.message;
+            const action = user.action;
             
             //проверка данных
             if(!userId || !message) throw new Error('');
+
+            //управление заявками для администратора
+            if(action === 'offer control'){
+
+                //оповещение о принятии или отклонении заявки
+                const options = Buttons([[
+                    { text: '✅ Принять', callback_data: 'accept offer' },
+                    { text: '❌ Отклонить', callback_data: 'reject offer' },
+                ]])
+
+                bot.sendMessage(userId, message.format(), { reply_markup: options });
+                return
+            }
 
             //отправка сообщения пользователю
             bot.sendMessage(userId, message.format());
