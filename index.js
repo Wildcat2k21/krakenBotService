@@ -69,7 +69,7 @@ app.post('/notify' , (req, res) => {
                         offerToAccept: control.offer_id
                     }
 
-                    bot.sendMessage(userId, message.format(), { reply_markup: options });
+                    bot.sendMessage(userId, message.format(), options);
                     return
                 }
             }
