@@ -322,7 +322,7 @@ bot.on('callback_query', async (query) => {
 
             //проверка таймаутра статистики
             if(!state._timeoutIsEnd('offer info')){
-                bot.sendMessage(telegramId, 'Просмотреть информацию по подписке можно будет через 30 минут с начала последнего просмотра 🔙', state.options);
+                bot.sendMessage(telegramId, 'Просмотреть информацию по подписке можно будет через 5 минут с начала последнего просмотра 🔙', state.options);
                 return
             }
 
@@ -330,7 +330,7 @@ bot.on('callback_query', async (query) => {
             const offerInfo = await APIserver.GET_OFFER_INFO(telegramId);
 
             //ограничение по просмотру статистики 1 раз в 30 минут
-            state._setTimeout(1800000, 'offer info');
+            state._setTimeout(300000, 'offer info');
 
             //проверка на строку подключения
             if(!offerInfo.connString){
