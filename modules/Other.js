@@ -96,26 +96,39 @@ function STATE(state) {
         this.default();
       },
 
-      _setTimeout(time, name, callback) {
-        const timeoutObj = {
-            name,
-            isEnd: false,
-            timeoutId: null
-        };
-        
-        // Добавляем объект в массив
-        this._timeouts.push(timeoutObj);
-        
-        // Устанавливаем таймаут и сохраняем его ID
-        timeoutObj.timeoutId = setTimeout(() => {
+      _callTimeoutLimit(time, name, maxCall = 1, callback) {
+
+        //поиск такого интервала
+        let timeItem = this._timeouts.find(item => item.name === name);
+
+        if(!timeItem){
+            const timeoutObj = {
+              name,
+              timeoutId: null,
+              called: 0,
+              maxCall
+          };
+          
+          // Добавляем объект в массив
+          this._timeouts.push(timeoutObj);
+          timeItem = timeoutObj;
+        }
+
+        timeItem.called++;
+
+        //запусе интервала в случае вызова сверх лимита
+        if(timeItem.called >= timeItem.maxCall) {
+          console.log('TRIGGERED');
+          timeItem.timeoutId = setTimeout(() => {
             if (callback) callback();
-            clearTimeout(timeoutObj.timeoutId); 
+            clearTimeout(timeItem.timeoutId); 
             this._timeouts = this._timeouts.filter(item => item.name !== name);
-        }, time);
+          }, time);
+        }
       },
     
       _timeoutIsEnd(name) {
-          const timeout = this._timeouts.find(item => item.name === name);
+          const timeout = this._timeouts.find(item => (item.name === name && item.timeoutId));
           if (timeout) return false;
           return true;
       },

@@ -312,7 +312,7 @@ bot.on('callback_query', async (query) => {
             await APIserver.UPDATE_QRCODE(telegramId);
 
             //ограничение по обновлению QR-кода 1 раз в 6 часов
-            state._setTimeout(21600000 , 'update qrcode');
+            state._callTimeoutLimit(21600000 , 'update qrcode');
             bot.sendMessage(telegramId, 'QR-код обновлен 🔄️\nВыберите опцию \'Моя подписка\', чтобы просмотреть.', state.options);
             return
         }
@@ -330,7 +330,7 @@ bot.on('callback_query', async (query) => {
             const offerInfo = await APIserver.GET_OFFER_INFO(telegramId);
 
             //ограничение по просмотру статистики 1 раз в 30 минут
-            state._setTimeout(300000, 'offer info');
+            state._callTimeoutLimit(300000, 'offer info', 3);
 
             //проверка на строку подключения
             if(!offerInfo.connString){
@@ -723,7 +723,7 @@ async function createNewoffer(state){
         state.offerData = await APIserver.CREATE_OFFER(state.data);
 
         //ограничение по заказу 1 раз в сутки
-        state._setTimeout(64800000, 'new offer');
+        state._callTimeoutLimit(64800000, 'new offer');
 
         //если оформление заказа вернуло код подключения сразу
         if(state.offerData.connection){
@@ -750,6 +750,9 @@ async function createNewoffer(state){
                 За каждого приглашенного друга по вашему промокоду, вы получаете скидку 25% на следующую оплату./n/n
                 Скидка за приглашения накапливается❗/nМаксимальная скидка 💯
             `.format(), ...state.options});
+
+            //ограничение по просмотру статистики 1 раз в 30 минут
+            state._callTimeoutLimit(300000, 'offer info', 3);
 
             return
         }
