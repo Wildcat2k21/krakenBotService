@@ -447,8 +447,6 @@ bot.on('callback_query', async (query) => {
                 state.data.telegram = query.from.username;
                 state.data.telegram_id = telegramId;
 
-                console.log(state.data);
-
                 //регистрация пользователя
                 await APIserver.NEW_USER(state.data);
 
@@ -513,6 +511,16 @@ bot.on('message', async (msg) => {
     try{
         //регистрация пользователя
         if(state.action === 'new user'){
+
+            //проверка на наличие имени пользователя в телеграм
+            if(!msg.from.username){
+                bot.sendMessage(telegramId, `Похоже, что вы не указали имя в телеграм при регистрации ℹ️/n/n
+                    Ваше имя будет использоваться для удобства связи с вами в случае необходимости.
+                    Откройте настройки, и укажите его в графе "Имя пользователя", чтобы продолжить./n/n
+                    ⚙️ Настройки ➡️ Имя пользователя
+                `);
+            }
+
             newUserAction(state, msg.text);
             return
         }
