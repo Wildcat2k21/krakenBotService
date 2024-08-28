@@ -40,10 +40,10 @@ app.post('/notify' , (req, res) => {
     try{
         //рассылка для каждого пользователя
         users.forEach(user => {
-            const {userId, message, control, withOptions} = user;
+            const {id, message, control, withOptions} = user;
             
             //проверка данных
-            if(!userId || !message) throw new Error('');
+            if(!id || !message) throw new Error('');
 
             //управление заявками для администратора
             if(control){
@@ -67,16 +67,16 @@ app.post('/notify' , (req, res) => {
                         offerToAccept: control.offer_id
                     }
 
-                    bot.sendMessage(userId, message.format(), options);
+                    bot.sendMessage(id, message.format(), options);
                     return
                 }
             }
 
             //использование опций
-            const options = withOptions ? userStates.find(state => state.telegramId === userId).options : undefined;
+            const options = withOptions ? userStates.find(state => state.telegramId === id).options : undefined;
 
             //отправка сообщения пользователю
-            bot.sendMessage(userId, message.format(), options);
+            bot.sendMessage(id, message.format(), options);
         });
 
         res.status(200).send('ok');
