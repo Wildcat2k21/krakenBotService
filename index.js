@@ -296,7 +296,17 @@ bot.on('callback_query', async (query) => {
 
         //обновление qrcode подключения
         if(query.data === 'update qrcode' && state.fullName){
+
+            //проверка таймаутра обновления QR-кода
+            if(!state.data._timeoutIsEnd('update qrcode')){
+                bot.sendMessage(telegramId, 'Обновлять QR-код можно будет через 6 часов с начала последнего обновления 🔙', state.options);
+                return
+            } 
+
             await APIserver.UPDATE_QRCODE(telegramId);
+
+            //ограничение по обновлению QR-кода 1 раз в 6 часов
+            state._setTimeout(21600000 , 'update qrcode');
             bot.sendMessage(telegramId, 'QR-код обновлен 🔄️\nВыберите опцию \'Моя подписка\', чтобы просмотреть.', state.options);
             return
         }
@@ -304,8 +314,17 @@ bot.on('callback_query', async (query) => {
         //информация по заявке
         if(query.data === 'offer info' && state.fullName){
 
+            //проверка таймаутра статистики
+            if(!state.data._timeoutIsEnd('offer info')){
+                bot.sendMessage(telegramId, 'Просмотреть информацию по подписке можно будет через 30 минут с начала последнего просмотра 🔙', state.options);
+                return
+            }
+
             //получение информации о заявке
             const offerInfo = await APIserver.GET_OFFER_INFO(telegramId);
+
+            //ограничение по просмотру статистики 1 раз в 30 минут
+            state.data._timeoutIsEnd(1800000, 'offer info');
 
             //проверка на строку подключения
             if(!offerInfo.connString){
@@ -453,6 +472,12 @@ bot.on('callback_query', async (query) => {
 
         //если новый заказ
         if(query.data === 'new offer' && (state.fullName || state.data.email)){
+
+            //проверка таймаутра не новую заявку
+            if(!state.data._timeoutIsEnd('new offer')){
+                bot.sendMessage(telegramId, 'Оформлять новый заказ можно не более одного раза в сутки 🔙', state.options);
+                return
+            }
 
             //регистрация пользователя РЕШИТЬ
             if(!state.fullName){
@@ -690,6 +715,9 @@ async function createNewoffer(state){
     try{
         //попытка отправки заявки с веденным промокодом
         state.offerData = await APIserver.CREATE_OFFER(state.data);
+
+        //ограничение по заказу 1 раз в сутки
+        state.data._timeoutIsEnd(86400000, 'new offer');
 
         //если оформление заказа вернуло код подключения сразу
         if(state.offerData.connection){

@@ -85,13 +85,43 @@ function STATE(state) {
       default() {
           // Восстанавливаем все поля к значениям из default_state
           Object.keys(default_state).forEach(key => {
-              this[key] = default_state[key];
+              if(!key.startsWith('_')){
+                this[key] = default_state[key];
+              }
           });
       },
+
       update(newState) {
         default_state = newState;
         this.default();
-      }
+      },
+
+      _setTimeout(time, name, callback) {
+        const timeoutObj = {
+            name,
+            isEnd: false,
+            timeoutId: null
+        };
+        
+        // Добавляем объект в массив
+        this._timeouts.push(timeoutObj);
+        
+        // Устанавливаем таймаут и сохраняем его ID
+        timeoutObj.timeoutId = setTimeout(() => {
+            if (callback) callback();
+            clearTimeout(timeoutObj.timeoutId); 
+            this._timeouts = this._timeouts.filter(item => item.name !== name);
+        }, time);
+      },
+    
+      _timeoutIsEnd(name) {
+          const timeout = this._timeouts.find(item => item.name === name);
+          if (timeout) return false;
+          return true;
+      },
+    
+      //таймаутры
+      _timeouts: []
   };
 }
 
