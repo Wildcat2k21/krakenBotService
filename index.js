@@ -248,17 +248,18 @@ bot.on('callback_query', async (query) => {
     if(!state) return;
 
     try{
-
         //принятие новой заявки
         if(state.telegramId === ADMIN_TELEGRAN_ID && state.action === 'accept offer' && query.data === 'accept offer' ){
             await APIserver.ACCEPT_OFFER(state.data.offerToAccept);
             state.default();
+            return;
         }
 
         //отклонение новой заявки
         if(state.telegramId === ADMIN_TELEGRAN_ID && state.action === 'accept offer' && query.data === 'reject offer' ){
-            await APIserver.ACCEPT_OFFER(state.data.offerToAccept);
+            await APIserver.REJECT_OFFER(state.data.offerToAccept);
             state.default();
+            return;
         }
 
         //подтверждение оплаты 
