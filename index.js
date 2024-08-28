@@ -447,6 +447,8 @@ bot.on('callback_query', async (query) => {
                 state.data.telegram = query.from.username;
                 state.data.telegram_id = telegramId;
 
+                console.log(state.data);
+
                 //регистрация пользователя
                 await APIserver.NEW_USER(state.data);
 
