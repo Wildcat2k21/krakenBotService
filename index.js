@@ -40,7 +40,7 @@ app.post('/notify' , (req, res) => {
     try{
         //рассылка для каждого пользователя
         users.forEach(user => {
-            const {userId, message, control, withOptions} = user.id;
+            const {userId, message, control, withOptions} = user;
             
             //проверка данных
             if(!userId || !message) throw new Error('');
