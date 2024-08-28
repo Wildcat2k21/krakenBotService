@@ -723,7 +723,7 @@ async function createNewoffer(state){
         state.offerData = await APIserver.CREATE_OFFER(state.data);
 
         //ограничение по заказу 1 раз в сутки
-        state._setTimeout(86400000, 'new offer');
+        state._setTimeout(64800000, 'new offer');
 
         //если оформление заказа вернуло код подключения сразу
         if(state.offerData.connection){
