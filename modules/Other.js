@@ -118,7 +118,6 @@ function STATE(state) {
 
         //запусе интервала в случае вызова сверх лимита
         if(timeItem.called >= timeItem.maxCall) {
-          console.log('TRIGGERED');
           timeItem.timeoutId = setTimeout(() => {
             if (callback) callback();
             clearTimeout(timeItem.timeoutId); 
