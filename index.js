@@ -348,7 +348,8 @@ bot.on('callback_query', async (query) => {
             const qrCodeBuffer = await QRCode.toBuffer(offerInfo.connString, { type: 'png' });
 
             //отправка сообщения с данными
-            await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке/n/n
+            await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке/n
+                Или скопируйте строку подключения для импорта:/n/n${offerInfo.connString.replace(/\n/g, '')}/n/n
                 Это очень важно❗ Во избежание бессрочной блокировки, 
                 не делитесь своим QR-кодом подключения ни с кем, подключайте только свои личные устройства./n/n
                 ℹ️ Название подписки: ${offerInfo.subName}/n/n
