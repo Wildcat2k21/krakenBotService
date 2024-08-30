@@ -245,7 +245,10 @@ bot.on('callback_query', async (query) => {
     const state = userStates.find((item) => item.telegramId === telegramId);
 
     //не продолжать сценарий без начала диалога
-    if(!state) return;
+    if(!state){
+        bot.sendMessage(telegramId, 'Выполните команду /start, чтобы начать.');
+        return
+    };
 
     try{
         //принятие новой заявки
@@ -348,8 +351,8 @@ bot.on('callback_query', async (query) => {
             const qrCodeBuffer = await QRCode.toBuffer(offerInfo.connString, { type: 'png' });
 
             //отправка сообщения с данными
-            await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке/n
-                Или скопируйте строку подключения для импорта:/n/n${offerInfo.connString.replace(/\n/g, '')}/n/n
+            await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке./n/n
+                Или скопируйте строку подключения для импорта:/n/n${offerInfo.connString}/n/n
                 Это очень важно❗ Во избежание бессрочной блокировки, 
                 не делитесь своим QR-кодом подключения ни с кем, подключайте только свои личные устройства./n/n
                 ℹ️ Название подписки: ${offerInfo.subName}/n/n
@@ -740,8 +743,8 @@ async function createNewoffer(state){
             state.default();
 
             //отправка сообщения с данными
-            await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке/n
-                Или скопируйте строку подключения для импорта:/n/n${state.offerData.connection.replace(/\n/g, '')}/n/n
+            await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке./n/n
+                Или скопируйте строку подключения для импорта:/n/n${state.offerData.connection}/n/n
                 Это очень важно❗ Во избежание бессрочной блокировки, 
                 не делитесь своим QR-кодом подключения ни с кем, подключайте только свои личные устройства./n/n
                 ℹ️ Название подписки: ${offerInfo.subName}/n/n
