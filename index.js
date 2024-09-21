@@ -185,15 +185,72 @@ bot.onText(/\/start/, async (msg) => {
         заявках и прочую информацию`.format());
     }
 
-    let userData = null;
-
     try{
+        let userData = null;
+
         //поиск пользователя
         userData = await APIserver.FIND_USER(telegramId);
 
+        //если пользователь найден
+        if(userData){
+
+            //новое сосотояние
+            const options = mainMenuOptions();
+            const userState = STATE({telegramId, data : {}, action: null, step: null, options, telegram: userData.telegram})
+
+            //инициализация пустого сценария
+            userStates.push(userState);
+            bot.sendMessage(telegramId, `Рады вас видеть! ${userData.nickname} 🎉`, options);
+
+        }
+        //приветственное сообщение от сервера
+        else {
+
+            //проверка на наличие имени пользователя в телеграм
+            if(!msg.from.username){
+                bot.sendMessage(telegramId, `Похоже, что вы не указали имя в телеграм при регистрации ℹ️/n/n
+                    Ваше имя будет использоваться для удобства связи с вами в случае необходимости. 
+                    Откройте настройки, и укажите его в графе "Имя пользователя", чтобы продолжить./n/n
+                    ⚙️ Настройки ➡️ Имя пользователя
+                `.format(), Buttons([[
+                    {text: 'Готово 👌', callback_data: 'new offer'}
+                ]]));
+
+                return
+            }
+
+            //регистрация пользователя
+            await APIserver.NEW_USER({telegram: msg.from.username, nickname: msg.from.first_name, telegram_id: telegramId});
+
+            //конфигурация
+            const serverConfig = await APIserver.GET_CONF();
+
+            //опции для пользователя
+            const options = mainMenuOptions();
+
+            //новое сосотояние
+            const userState = STATE({telegramId, telegram: msg.from.username, data : {
+                'sub_id': 'free',
+                'user_id': telegramId
+            }, action: null, step: null, options});
+
+            //добавление сценария
+            userStates.push(userState);
+
+            //получение строки подключения
+            // const connection = await createNewoffer(userState, true);
+
+            bot.sendMessage(telegramId, serverConfig.welcome_message + `/n/n
+            Ваша строка для подключения к VPN 🔥/n/n
+            \`\`\`
+                VLESS://1231kasdkjaksdjqwioejqwojdaosjdaoisdjiqwuhinsfnasffdad
+            \`\`\`/n/n
+            Если не подключались ранее, выберите опцию "Как подключится" ниже 👇
+            `.format(), options);
+        }
     }
     catch(err){
-
+        //обработка ошибок axios
         if(err.response && typeof err.response.data === 'string'){
             bot.sendMessage(telegramId, err.response.data);
             return
@@ -202,36 +259,6 @@ bot.onText(/\/start/, async (msg) => {
         WriteInLogFile(err);
         bot.sendMessage(telegramId, config.default_error_message);
         return;
-    }
-
-    //если пользователь найден
-    if(userData){
-
-        //новое сосотояние
-        const options = mainMenuOptions();
-        const userState = STATE({telegramId, data : {}, action: null, step: null, options, fullName: userData.full_name})
-
-        //инициализация пустого сценария
-        userStates.push(userState);
-        bot.sendMessage(telegramId, `Рады вас видеть! ${userState.fullName} 🎉`, options);
-
-    }
-    //приветственное сообщение от сервера
-    else {
-        const serverConfig = await APIserver.GET_CONF();
-
-        //опции для пользователя
-        const options = Buttons([[
-            { text: 'Попробовать бесплатно', callback_data: 'policy' },
-            { text: 'Больше информации', callback_data: 'service info' }
-        ]]);
-
-        //новое сосотояние
-        const userState = STATE({telegramId, data : {}, action: null, step: null, options})
-
-        //инициализация пустого сценария
-        userStates.push(userState)
-        bot.sendMessage(telegramId, serverConfig.welcome_message, options);
     }
 });
   
@@ -281,25 +308,26 @@ bot.on('callback_query', async (query) => {
         }
 
         //обработка на главную в случае отмены оплаты
-        if(query.data === 'main menu' && state.fullName){
+        if(query.data === 'main menu' && state.telegram){
             bot.sendMessage(telegramId, 'Вы на главной странице своего аккаунта ℹ️', state.options);
             return
         }
 
         //контакты администратора
-        if(query.data === 'admin info' && state.fullName){
+        if(query.data === 'admin info' && state.telegram){
             bot.sendMessage(telegramId, config.admin_contacts, state.options);
             return
         }
 
         //инструкция по подключению
-        if(query.data === 'instruction' && state.fullName){
+        if(query.data === 'instruction' && state.telegram){
+            console.log(config.service_instruction);
             bot.sendMessage(telegramId, config.service_instruction, state.options);
             return;
         }
 
         //обновление qrcode подключения
-        if(query.data === 'update qrcode' && state.fullName){
+        if(query.data === 'update qrcode' && state.telegram){
 
             //проверка таймаутра статистики
             if(!state._timeoutIsEnd('offer info')){
@@ -322,7 +350,7 @@ bot.on('callback_query', async (query) => {
         }
 
         //информация по заявке
-        if(query.data === 'offer info' && state.fullName){
+        if(query.data === 'offer info' && state.telegram){
 
             //проверка таймаутра статистики
             if(!state._timeoutIsEnd('offer info')){
@@ -366,70 +394,15 @@ bot.on('callback_query', async (query) => {
             return
         }
 
-        //политики сервиса
-        if(query.data === 'policy' && !state.fullName){
-
-            const options = Buttons([
-                [{ text: 'Политика конфиденциальности 🔒 ', callback_data: 'private policy' }],
-                [{ text: 'Пользовательское соглашение 👤', callback_data: 'user policy' }],
-                [{ text: 'Согласен 💯, продолжим!', callback_data: 'registration' }]
-            ])
-
-            state.options = options;
-            bot.sendMessage(telegramId, `Прежде чем приступить внимательно ознакомтесь с условиями нашего сервиса./n/n
-            У нас прозрачные условия и политика конфиденциальности⚡`.format(), options);
-            return
-        }
-
-        //политика конфеденциальности
-        if(query.data ==='private policy' && !state.fullName){
-            bot.sendMessage(telegramId, config.private_policy, state.options);
-            return
-        }
-
-        //пользовательское соглашение
-        if(query.data === 'user policy' && !state.fullName){
-            bot.sendMessage(telegramId, config.user_policy, state.options);
-            return
-        }
-
-        //оформление нового заказа
-        if(query.data === 'registration' && !state.fullName){
-
-            //проверка на наличие имени пользователя в телеграм
-            if(!query.from.username){
-                bot.sendMessage(telegramId, `Похоже, что вы не указали имя в телеграм при регистрации ℹ️/n/n
-                    Ваше имя будет использоваться для удобства связи с вами в случае необходимости. 
-                    Откройте настройки, и укажите его в графе "Имя пользователя", чтобы продолжить./n/n
-                    ⚙️ Настройки ➡️ Имя пользователя
-                `.format(), Buttons([[
-                    {text: 'Готово 👌', callback_data: 'registration'}
-                ]]));
-
-                return
-            }
-
-            //получение полей пользователя
-            bot.sendMessage(telegramId, `Перед оформлением заявки зарегестрируйтесь в два клика!/n/n
-            Будьте внимательны при заполнении ❗/n/n
-            Введите фамилию имя и отчество (при наличии)`.format());
-            
-            // Устанавливаем состояние пользователя на 'ожидание имени'
-            state.action = 'new user';
-            state.step = 'awaiting_name';
-            state.data = {};
-            return
-        }
-
         //если пользователь отказался от промокода
-        if(query.data === 'no promocode' && state.fullName){
+        if(query.data === 'no promocode' && state.telegram){
             await createNewoffer(state);
             state.default();
             return
         }
 
         //обработка выбранной подписки
-        if(query.data.includes('sub=') && state.fullName){
+        if(query.data.includes('sub=') && state.telegram){
 
             //проверка возможности использования промокода
             const currentSub = state.subData.find(item => item.name_id === query.data.replace('sub=', ''));
@@ -480,29 +453,12 @@ bot.on('callback_query', async (query) => {
         }
 
         //если новый заказ
-        if(query.data === 'new offer' && (state.fullName || state.data.email)){
+        if(query.data === 'new offer' && state.telegram){
 
             //проверка таймаутра не новую заявку
             if(!state._timeoutIsEnd('new offer')){
                 bot.sendMessage(telegramId, 'Оформлять новый заказ можно не более одного раза в сутки с начала последней заявки 🔙', state.options);
                 return
-            }
-
-            //регистрация пользователя РЕШИТЬ
-            if(!state.fullName){
-
-                //получение дополнительных полей сведений о пользователе
-                state.data.telegram = query.from.username;
-                state.data.telegram_id = telegramId;
-
-                //регистрация пользователя
-                await APIserver.NEW_USER(state.data);
-
-                //новые опции пользователя
-                const options = mainMenuOptions();
-
-                //обновляем сосотояние
-                state.update({telegramId, options, data : {}, action: null, step: null, fullName: state.data.full_name});
             }
 
             //получение имеющиъся подписок
@@ -518,12 +474,6 @@ bot.on('callback_query', async (query) => {
 
             //более развернутое сообщение о подписках
             bot.sendMessage(telegramId, `Выберите подписку 👇/n/n`.format(), state.options);
-            return
-        }
-        
-        //предоставление информации о сервисе и его работе
-        if(query.data === 'service info' && !state.fullName){
-            bot.sendMessage(telegramId, config.abaout_service, state.options);
             return
         }
     }
@@ -556,13 +506,7 @@ bot.on('message', async (msg) => {
         return
     };
 
-    try{
-        //регистрация пользователя
-        if(state.action === 'new user'){
-            newUserAction(state, msg.text);
-            return
-        }
-        
+    try{        
         //ввод промокода пользователем
         if(state.action === 'awaiting promocode'){
 
@@ -605,100 +549,8 @@ bot.on('message', async (msg) => {
 });
 
 //функция обработки нового пользователя
-function newUserAction(state, messageText){
-    //получение имени пользователя
-    if(state.step === 'awaiting_name'){
-
-        //ограничение данных ввода
-        if(messageText.length > 100) {
-            bot.sendMessage(state.telegramId, 'Поле \'ФИО\' имеет недопустимую длину 🔂');
-            return
-        }
-
-        state.data.full_name = messageText;
-        state.step = 'awaiting_education';
-        bot.sendMessage(state.telegramId, `Вы обучаетесь ?/n
-            Укажите учебную степень, например:/n/n
-            Студент · Школьник · Не учусь · Другое (Укажите)/n/n
-            Это не повлияет на решение по вашей заявке. ✔️
-        `.format());
-        return
-    }
-
-    //получение учебной степени
-    if(state.step === 'awaiting_education'){
-        //ограничение данных ввода
-        if(messageText.length > 50 ){
-            bot.sendMessage(state.telegramId, 'Поле \'Учебная степень\' имеет недопустимую длину 🔂');
-            return
-        }
-
-        state.data.education_status = messageText;
-        state.step = 'awaiting_phone';
-        bot.sendMessage(state.telegramId, `Укажите личный номер телефона для связи с вами./n
-        К примеру: 8 900 000 00 00`.format());
-        return
-    }
-
-    //получение email
-    if(state.step === 'awaiting_phone'){
-        //ограничение данных ввода
-        if(messageText.length > 15){
-            bot.sendMessage(state.telegramId, 'Поле \'Номер телефона\' имеет недопустимую длину 🔂');
-            return
-        }
-
-        //проверка на корректность номера телефона
-        if(!Number(messageText.replace(/\s/g, ''))){
-            bot.sendMessage(state.telegramId, `Номер телефона имеет неверный формат./n
-            Пример заполнения: 8 900 000 00 00`.format());
-            return
-        }
-
-        state.data.phone_number = Number(messageText.replace(/\s/g, ''));
-        state.step = 'awaiting_email';
-        bot.sendMessage(state.telegramId, 'Укажите свой email./nК примеру: RyanGosling@exmaple.com'.format());
-        return
-    }
-
-    //получения остальных полей
-    if(state.step === 'awaiting_email'){
-        //ограничение данных ввода
-        if(messageText.length > 100){
-            bot.sendMessage(state.telegramId, 'Поле \'Email\' имеет недопустимую длину 🔂');
-            return
-        }
-
-        //проверка на корректность email
-        if(!messageText.includes('@')){
-            bot.sendMessage(state.telegramId, `Email имеет неверный формат./n
-            Пример заполнения: RyanGosling@exmaple.com`.format());
-            return
-        }
-
-        state.data.email = messageText;
-        state.step = 'check new user';
-    }
-
-    //проверка данный пользователем
-    state.options = {
-        reply_markup: {
-            inline_keyboard: [
-                [
-                    { text: 'Исправить', callback_data: 'registration' },
-                    { text: 'Все верно', callback_data: 'new offer' }
-                ]
-            ]
-        }
-    };
-
-    //сообщение статуса регистрации
-    bot.sendMessage(state.telegramId, `Проверьте правильность заполнения данных 👇/n/n
-        👤 ФИО: ${state.data.full_name}/n/n
-        🎓 Учебная степень: ${state.data.education_status}/n/n
-        📲 Номер телефона: ${state.data.phone_number}/n/n
-        📧 Email: ${state.data.email}/n/n
-    `.format(), state.options);
+function autoGiveFreeOffer(state, messageText){
+  
 }
 
 //главное меню пользователя
@@ -716,7 +568,7 @@ function mainMenuOptions(){
 }
 
 //создание новой заявкиэ
-async function createNewoffer(state){
+async function createNewoffer(state, onlyConnection){
 
     //получение id пользователя
     const telegramId = state.telegramId;
@@ -730,6 +582,9 @@ async function createNewoffer(state){
 
         //если оформление заказа вернуло код подключения сразу
         if(state.offerData.connection){
+
+            //возвращаться только строку подключение
+            if(onlyConnection) return state.offerData.connection;
 
             // Генерация QR-кода
             const qrCodeBuffer = await QRCode.toBuffer(state.offerData.connection, { type: 'png' });
