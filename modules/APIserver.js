@@ -21,10 +21,25 @@ class APIserver {
         return response.data;
     }
 
+    static async FIND_USER_WITH_INVITE(invite){
+        const response = await axios.get(`${APIserver.serverURL}/data`, {
+            params: {
+            tableName : 'user',
+            condition: [[{
+                field: 'invite_code',
+                exacly: invite
+            }]], limit: 1}
+        });
+        
+        return response.data[0]
+    }
+
     //поиск пользователя
     static async FIND_USER(telegram_id) {
         const response = await axios.get(`${APIserver.serverURL}/data`, {
-            params: {tableName : 'user', condition: [[{
+            params: {
+            tableName : 'user',
+            condition: [[{
                 field: 'telegram_id',
                 exacly: telegram_id
             }]], limit: 1}
@@ -36,7 +51,9 @@ class APIserver {
     //поиск не бесплатного заказа
     static async FIND_NOT_FREE_OFFER(telegram_id) {
         const response = await axios.get(`${APIserver.serverURL}/data`, {
-            params: {tableName : 'offer', condition: [[{
+            params: {
+            tableName : 'offer',
+            condition: [[{
                 field: 'user_id',
                 exacly: telegram_id
             },{

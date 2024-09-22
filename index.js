@@ -169,7 +169,7 @@ const server = app.listen(PORT, () => {
 });
 
 //отправляем кнопки при команде /start
-bot.onText(/\/start/, async (msg) => {
+bot.onText(/\/start(.*)/, async (msg, match) => {
 
     //идентификатор пользователя
     const telegramId = msg.from.id;
@@ -220,18 +220,40 @@ bot.onText(/\/start/, async (msg) => {
             }
 
             //регистрация пользователя
-            await APIserver.NEW_USER({telegram: msg.from.username, nickname: msg.from.first_name, telegram_id: telegramId});
+            const registrationData = {
+                telegram: msg.from.username,
+                nickname: msg.from.first_name,
+                telegram_id: telegramId
+            }
+
+            //получение инвайта
+            if(match[1]){
+                //проверка на существование инвайта
+                const userWithThisInvite = await APIserver.FIND_USER_WITH_INVITE(match[1]);
+
+                //установка кода приглашения
+                if(userWithThisInvite){
+                    registrationData.invited_with_code = match[1];
+                    console.log('Пользователь найден');
+
+                } else {
+                    console.log('Пользователь не найден');
+                }
+            }
+
+            // регистрация пользователя
+            await APIserver.NEW_USER(registrationData);
 
             //конфигурация
-            const serverConfig = await APIserver.GET_CONF();
+            const apiServerConfig = await APIserver.GET_CONF();
 
             //опции для пользователя
             const options = mainMenuOptions();
 
             //новое сосотояние
             const userState = STATE({telegramId, telegram: msg.from.username, data : {
-                'sub_id': 'free',
-                'user_id': telegramId
+                sub_id: 'free',
+                user_id: telegramId
             }, action: null, step: null, options});
 
             //добавление сценария
@@ -240,7 +262,7 @@ bot.onText(/\/start/, async (msg) => {
             //получение строки подключения
             // const connection = await createNewoffer(userState, true);
 
-            bot.sendMessage(telegramId, serverConfig.welcome_message + `/n/n
+            bot.sendMessage(telegramId, apiServerConfig.welcome_message + `/n/n
             <b>Ваша строка для подключения к VPN 🔥</b>/n
             <pre><code>
                 VLESS://1231kasdkjaksdjqwioejqwojdaosjdaoisdjiqwuhinsfnasffdad
@@ -294,13 +316,17 @@ bot.on('callback_query', async (query) => {
 
         //подтверждение оплаты 
         if(query.data === 'confirm payment' && state.offerData){
+
+            //сброс опций по умолчанию
+            state.default();
+
             // поздравление с новой заявкой
             await bot.sendMessage(telegramId, `<b>✔️ Заявка отправлена</b>/n/n
                 Тип подписки — ${state.offerData.subname}/n
                 Цена — ${state.offerData.price} ₽/n
                 К оплате с учетом скидки — ${state.offerData.toPay} ₽/n
                 Использованный промокод — ${state.offerData.promoName}/n
-                Скидка по промокоду — ${state.offerData.discount}%/n/n
+                Скидка по оплате — ${state.offerData.discount}%/n/n
                 <b>🧩 Заявка в очереди</b>/n/n
                 Также статус заявки можно проверить в опции <b>"Моя подписка"</b>
             `.format(), state.options);
@@ -309,6 +335,13 @@ bot.on('callback_query', async (query) => {
 
         //обработка на главную в случае отмены оплаты
         if(query.data === 'main menu' && state.telegram){
+            //если пользователь оформлял заказ и вышел на главную, то отменить заказ
+            if(state.offerData){
+                await APIserver.REJECT_OFFER(state.offerData.offerId);
+            }
+
+            //сброс отпций и отправка сообщения
+            state.default();
             bot.sendMessage(telegramId, 'Вы на главной странице своего аккаунта ℹ️', state.options);
             return
         }
@@ -378,6 +411,9 @@ bot.on('callback_query', async (query) => {
             // Генерация QR-кода
             const qrCodeBuffer = await QRCode.toBuffer(offerInfo.connString, { type: 'png' });
 
+            //конфигурация сервера
+            const apiServerConfig = await APIserver.GET_CONF();
+
             //отправка сообщения с данными
             await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке./n/n
                 <b>Или скопируйте строку подключения для импорта:</b>/n
@@ -387,10 +423,10 @@ bot.on('callback_query', async (query) => {
                 ℹ️ Использовано: ${FormatBytes(offerInfo.usedTraffic)}/n/n
                 📅 Дата окончания: ${offerInfo.subDateLimit}/n/n
                 ℹ️ Создан: ${offerInfo.createdDate}/n/n
-                ${offerInfo.price === 0 ? '' : `👥 Код для приглашения друзей: ${offerInfo.inviteCode}/n/n`}
-                <b>ℹ️ Пригласите друга по этой реферальной ссылке (Нажмите, чтобы скопировать):</b>/n
-                <code>https://t.me/KrakenVPNdevBot?start=${123}</code>
-                За каждого приглашенного друга, вы получаете скидку 50% на следующую оплату, друг — 25%/n/n
+                ${offerInfo.price === 0 ? '<b>ℹ️ При оформлении платной подписки вам доступна реферальня ссылка.</b>/n/n' :
+                `<b>ℹ️ Пригласите друга по этой реферальной ссылке (Нажмите, чтобы скопировать):</b>/n
+                <code>https://t.me/KrakenVPNdevBot?start=${offerInfo.inviteCode}</code>/n/n`}
+                За каждого приглашенного друга, вы получаете скидку ${apiServerConfig.invite_discount}% на следующую оплату, друг — ${apiServerConfig.for_invited_discount}%/n/n
                 За двух приглашенных друзей — бесплатный месяц на любой тариф 🤝
             `.format(), ...state.options});
             return
@@ -588,15 +624,17 @@ async function createNewoffer(state, onlyConnection){
             //возвращаться только строку подключение
             if(onlyConnection) return state.offerData.connection;
 
+            //сброс опций
+            state.default();
+
             // Генерация QR-кода
             const qrCodeBuffer = await QRCode.toBuffer(state.offerData.connection, { type: 'png' });
 
             // Получение информации по подписке
             const offerInfo = await APIserver.GET_OFFER_INFO(telegramId);
 
-            console.log(state);
-            //сброс опций
-            state.update({lastAction: 'offer payment'});
+            //конфигурация сервера
+            const apiServerConfig = await APIserver.GET_CONF();
 
             //отправка сообщения с данными
             await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке./n/n
@@ -607,8 +645,8 @@ async function createNewoffer(state, onlyConnection){
                 ℹ️ Использовано: ${FormatBytes(offerInfo.usedTraffic)}/n/n
                 📅 Дата окончания: ${offerInfo.subDateLimit}/n/n
                 ℹ️ Создан: ${offerInfo.createdDate}/n/n
-                <b>ℹ️ При приобритении платной подписки вам доступна реферальная ссылка</b>/n 
-                За каждого приглашенного друга этой ссылке, вы получаете скидку 50% на следующую оплату, друг — 25%/n/n
+                <b>ℹ️ При приобритении платной подписки вам доступна реферальная ссылка.</b>/n 
+                За каждого приглашенного друга этой ссылке, вы получаете скидку ${apiServerConfig.invite_discount}% на следующую оплату, друг — ${apiServerConfig.for_invited_discount}%/n/n
                 За двух приглашенных друзей — бесплатный месяц на любой тариф 🤝
             `.format(), ...state.options});
 
@@ -625,7 +663,7 @@ async function createNewoffer(state, onlyConnection){
         //пустые кнопки для подтверждения
         state.options = Buttons([
             [{ text: 'Готово 👌', callback_data: 'confirm payment' }],
-            [{ text: 'Вернуться 🔙', callback_data: 'main menu' }],
+            [{ text: 'Отменить заявку ❌', callback_data: 'main menu' }],
         ]);
 
         // отправка изображения с текстом
@@ -639,8 +677,9 @@ async function createNewoffer(state, onlyConnection){
             `.format(), ...state.options
         });
     
-    //обрабатывает только ошибку использования пробной подписки
+    
     }
+    //обрабатывает только ошибку использования пробной подписки
     catch(err){
 
         //проверка на ошибку переоформления пробной подписки
