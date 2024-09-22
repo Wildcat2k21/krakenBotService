@@ -45,7 +45,7 @@ function Buttons(keyboard){
         reply_markup: {
             inline_keyboard: keyboard
         },
-        parse_mode: 'Markdown'
+        parse_mode: 'HTML'
     };
 }
 
