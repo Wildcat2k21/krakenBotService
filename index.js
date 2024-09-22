@@ -260,12 +260,12 @@ bot.onText(/\/start(.*)/, async (msg, match) => {
             userStates.push(userState);
 
             //получение строки подключения
-            // const connection = await createNewoffer(userState, true);
+            const connection = await createNewoffer(userState, true);
 
             bot.sendMessage(telegramId, apiServerConfig.welcome_message + `/n/n
             <b>Ваша строка для подключения к VPN 🔥</b>/n
             <pre><code>
-                VLESS://1231kasdkjaksdjqwioejqwojdaosjdaoisdjiqwuhinsfnasffdad
+                ${connection}
             </code></pre>/n/n
             Если не подключались ранее, выберите опцию <b>"Как подключится"</b> ниже 👇
             `.format(), options);
