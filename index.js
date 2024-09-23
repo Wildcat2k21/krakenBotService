@@ -512,7 +512,10 @@ bot.on('callback_query', async (query) => {
                 ${TextDayFormat(sub.date_limit / 86400)} | 
                 Трафик ${sub.data_limit === 0 ? 'ထ' : sub.data_limit} Гб / Мес | 
                 ${sub.price} ₽ / Мес/n
-            `.format(), callback_data: `sub=${sub.name_id}`}])));
+            `.format(), callback_data: `sub=${sub.name_id}`}]).push([{
+                text: 'Вернуться на главную ❌',
+                callback_data: 'main menu'
+            }])));
 
             //более развернутое сообщение о подписках
             bot.sendMessage(telegramId, `Выберите подписку 👇/n/n`.format(), state.options);
