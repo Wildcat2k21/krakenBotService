@@ -551,7 +551,7 @@ bot.on('message', async (msg) => {
     
     //проверка на начатый диалог
     if(!state){
-        bot.sendMessage(telegramId, 'Выполните команду /start, чтобы начать.');
+        bot.sendMessage(telegramId, 'Выполните команду /start, чтобы начать');
         return
     };
 
