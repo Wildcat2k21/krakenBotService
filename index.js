@@ -200,7 +200,7 @@ bot.onText(/\/start\s?(.*)/, async (msg, match) => {
 
             //инициализация пустого сценария
             userStates.push(userState);
-            bot.sendMessage(telegramId, `Рады вас видеть! ${userData.nickname} 🎉`, options);
+            bot.sendMessage(telegramId, `Рады вас видеть! ${userData.nickname} 👋👋👋`, options);
 
         }
         //приветственное сообщение от сервера
