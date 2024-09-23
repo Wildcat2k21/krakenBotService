@@ -231,10 +231,12 @@ bot.onText(/\/start(.*)/, async (msg, match) => {
                 //проверка на существование инвайта
                 const userWithThisInvite = await APIserver.FIND_USER_WITH_INVITE(match[1]);
 
+                console.log('Пользователь найден', match[1]);
+
                 //установка кода приглашения
                 if(userWithThisInvite){
                     registrationData.invited_with_code = match[1];
-                    console.log('Пользователь найден');
+                    console.log('Пользователь найден', match[1]);
 
                 } else {
                     console.log('Пользователь не найден');
