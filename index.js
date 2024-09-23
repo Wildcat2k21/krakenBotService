@@ -231,15 +231,9 @@ bot.onText(/\/start\s?(.*)/, async (msg, match) => {
                 //проверка на существование инвайта
                 const userWithThisInvite = await APIserver.FIND_USER_WITH_INVITE(match[1]);
 
-                console.log('Пользователь найден', `"${match[1]}"`);
-
                 //установка кода приглашения
                 if(userWithThisInvite){
                     registrationData.invited_with_code = match[1];
-                    console.log('Пользователь найден', match[1]);
-
-                } else {
-                    console.log('Пользователь не найден');
                 }
             }
 
@@ -360,7 +354,6 @@ bot.on('callback_query', async (query) => {
 
         //инструкция по подключению
         if(query.data === 'instruction' && state.telegram){
-            console.log(config.service_instruction);
             bot.sendMessage(telegramId, config.service_instruction, state.options);
             return;
         }
