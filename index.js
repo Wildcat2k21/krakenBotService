@@ -417,6 +417,7 @@ bot.on('callback_query', async (query) => {
             await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке./n/n
                 <b>Или скопируйте строку подключения для импорта:</b>/n
                 <pre><code>${offerInfo.connString}</code></pre>/n/n
+                💻 Вы можете подключить любое количество устройств/n/n
                 ℹ️ Название подписки: ${offerInfo.subName}/n/n
                 📶 Трафик: ${!offerInfo.subDataGBLimit  ? 'ထ' : offerInfo.subDataGBLimit} ГБ/n/n
                 ℹ️ Использовано: ${FormatBytes(offerInfo.usedTraffic)}/n/n
@@ -648,6 +649,7 @@ async function createNewoffer(state, onlyConnection){
             await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке./n/n
                 <b>Или скопируйте строку подключения для импорта:</b>/n
                 <pre><code>${state.offerData.connection}</code></pre>/n/n
+                💻 Вы можете подключить любое количество устройств/n/n
                 ℹ️ Название подписки: ${offerInfo.subName}/n/n
                 📶 Трафик: ${!offerInfo.subDataGBLimit  ? 'ထ' : offerInfo.subDataGBLimit} ГБ/n/n
                 ℹ️ Использовано: ${FormatBytes(offerInfo.usedTraffic)}/n/n
