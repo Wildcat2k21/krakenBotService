@@ -488,7 +488,7 @@ bot.on('callback_query', async (query) => {
                 );
 
                 //ввод промокода
-                bot.sendMessage(telegramId, `Хотите больше сэконосить ?/n/n
+                bot.sendMessage(telegramId, `Хотите больше сэкономить ?/n/n
                     Введите промокод, либо код приглашения от другого пользователя, чтобы получить скидку на оплату ℹ️
                 `.format(), state.options);
                 return
