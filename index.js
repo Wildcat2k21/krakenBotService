@@ -169,7 +169,7 @@ const server = app.listen(PORT, () => {
 });
 
 //отправляем кнопки при команде /start
-bot.onText(/\/start(.*)/, async (msg, match) => {
+bot.onText(/\/start\s?(.*)/, async (msg, match) => {
 
     //идентификатор пользователя
     const telegramId = msg.from.id;
