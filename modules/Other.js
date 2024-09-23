@@ -90,6 +90,8 @@ function STATE(state) {
                 this[key] = default_state[key];
               }
           });
+
+          return this;
       },
 
       update(newState) {

@@ -40,7 +40,7 @@ app.post('/notify' , (req, res) => {
     try{
         //рассылка для каждого пользователя
         users.forEach(user => {
-            const {id, message, control, withOptions} = user;
+            const {id, message, control, withDefaultOptions} = user;
             
             //проверка данных
             if(!id || !message) throw new Error('');
@@ -73,7 +73,7 @@ app.post('/notify' , (req, res) => {
             }
 
             //использование опций
-            const options = withOptions ? userStates.find(state => state.telegramId === id).options : undefined;
+            const options = withDefaultOptions ? userStates.find(state => state.telegramId === id).options.default() : {parse_mode: 'HTML'};
 
             //отправка сообщения пользователю
             bot.sendMessage(id, message.format(), options);
