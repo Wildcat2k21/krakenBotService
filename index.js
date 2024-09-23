@@ -73,7 +73,7 @@ app.post('/notify' , (req, res) => {
             }
 
             //использование опций
-            const options = withDefaultOptions ? userStates.find(state => state.telegramId === id).options.default() : {parse_mode: 'HTML'};
+            const options = withDefaultOptions ? userStates.find(state => state.telegramId === id).default().options : {parse_mode: 'HTML'};
 
             //отправка сообщения пользователю
             bot.sendMessage(id, message.format(), options);
