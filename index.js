@@ -426,7 +426,7 @@ bot.on('callback_query', async (query) => {
                 ${
                     offerInfo.price === 0 ? '<b>При оформлении платной подписки вам доступна реферальня ссылка.</b> ' :
                     `<b>Пригласите друга по этой реферальной ссылке 👇</b>/n
-                    <pre><code>https://t.me/KrakenVPNdevBot?start=${offerInfo.inviteCode}</code></pre>/n/n
+                    <pre><code>https://t.me/KrakenVPNbot?start=${offerInfo.inviteCode}</code></pre>/n/n
                     👥 Приглашено пользователей: ${offerInfo.userInviteCount}/n/n
                     ℹ️ Скидка на следующий месяц: ${offerInfo.nextPayDiscount}%/n/n
                     `
