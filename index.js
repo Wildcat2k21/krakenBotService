@@ -338,6 +338,7 @@ bot.on('callback_query', async (query) => {
             //если пользователь оформлял заказ и вышел на главную, то отменить заказ
             if(state.offerData){
                 await APIserver.REJECT_OFFER(state.offerData.offerId);
+                delete state.offerData;
             }
 
             //сброс отпций и отправка сообщения
