@@ -682,8 +682,7 @@ async function createNewoffer(state, onlyConnection){
             Скидка по промокоду ${state.offerData.promoName} — ${state.offerData.discount}% ℹ️/n/n
             Сканируйте QR-код для оплаты, если используете приложение Сбербанк/n/n
             Или воспользуйтесь безкомпромиссной оплатой по СПБ на номер: <b>+7 922 406 56 25. Получатель Альберт К.</b>/n/n
-            <b>Отправьте чек на почту: wildcat2k21@gmail.com</b>/n/n
-            Желательно сохраните копию чека у себя.
+            Чек можно прислать сюда: wildcat2k21@gmail.com
             `.format(), ...state.options
         });
     }
