@@ -33,27 +33,6 @@ String.prototype.format = function () {
     return this.replace(/ {2,}/g, ' ').replace(/((?=\n)\s+)|\n/g, '').replace(/\/n/g, '\n');
 }
 
-// //get all paths with *.mp4 in public/videos with fs
-// async function getVideoList() {
-//     const files = await fs.readdir('./public/videos');
-//     return files
-//         .filter(file => file.endsWith('.mp4'))
-//         .map(file => file.replace('.mp4', ''));
-// }
-
-// //создание опций инструкции
-// async function createInstructionOptions() {
-//     const videos = await getVideoList();
-//     const options = Buttons([[
-//         videos.map(video => ({ text: video, callback_data: `video=${video}` })),
-//     ]]);
-
-//     return options;
-// }
-
-// //папка с ресурсами
-// app.use(express.static(path.join(__dirname, 'public')));
-
 //оповещение основных событий
 app.post('/notify' , (req, res) => {
     const {users} = req.body;
@@ -61,10 +40,20 @@ app.post('/notify' , (req, res) => {
     try{
         //рассылка для каждого пользователя
         users.forEach(user => {
-            const {id, message, control, withDefaultOptions} = user;
+
+            //данные для отправки уведомлений
+            const {id, message, control, withDefaultOptions, sticker} = user;
             
             //проверка данных
             if(!id || !message) throw new Error('Не передан идентификатор или сообщение');
+
+            //опции
+            let notify = {
+                id,
+                message,
+                options: null,
+                sticker: null,
+            };
 
             //управление заявками для администратора
             if(control){
@@ -72,11 +61,13 @@ app.post('/notify' , (req, res) => {
                 //управление входящими заявками
                 if(control.action === 'accept offer'){
 
+                    //поиск подминистратора
                     const adminState = userStates.find(state => state.telegramId === ADMIN_TELEGRAN_ID);
+
                     if(!adminState) return;
     
                     //оповещение о принятии или отклонении заявки
-                    const options = Buttons([[
+                    notify.options = Buttons([[
                         { text: '✅ Принять', callback_data: 'accept offer' },
                         { text: '❌ Отклонить', callback_data: 'reject offer' },
                     ]])
@@ -87,26 +78,35 @@ app.post('/notify' , (req, res) => {
                     adminState.data = {
                         offerToAccept: control.offer_id
                     }
+                }
 
-                    bot.sendMessage(id, message.format(), options);
-                    return
+                //управление входящими заявками
+                if(control.action === 'instruction'){
+                    notify.options = instructionOptions().options;
                 }
             }
-
+            
             //использование опций
-            const options = withDefaultOptions ? userStates.find(state => state.telegramId === id).default().options : {parse_mode: 'HTML'};
+            if(withDefaultOptions){
+                notify.options = userStates.find(state => state.telegramId === id).default().options;
+            }
+
+            //опции по умолчанию
+            if(!withDefaultOptions && !control){
+                notify.options = {parse_mode: 'HTML'}
+            }
 
             //прикреп стикера c сообщением
-            if(user.sticker) {
-                bot.sendMessage(id, message.format(), options).then(() => {
-                    bot.sendSticker(id, user.sticker)
+            if(sticker){
+                bot.sendSticker(notify.id, sticker).then(() => {
+                    bot.sendMessage(notify.id, notify.message.format(), notify.options);
                 });
-
-                return
+                
+                return;
             }
 
             //отправка сообщения пользователю
-            bot.sendMessage(id, message.format(), options);
+            bot.sendMessage(notify.id, notify.message.format(), notify.options);
         });
 
         res.status(200).send('ok');
@@ -384,8 +384,23 @@ bot.on('callback_query', async (query) => {
         }
 
         //инструкция по подключению
+        if(query.data.indexOf('device_instruction') + 1){
+            const {devices} = instructionOptions();
+            const selectedDevice = query.data.split('=')[1];
+            const device = devices.find(device => device.name === selectedDevice);
+
+            bot.sendMessage(telegramId, `
+                Смотрите видео, как подключить <a href='${device.videoUrl}'>${device.videoUrl ? device.name : '(видео скоро будет)'} 👇</a>/n/n
+                ✍️ Или прочтите <a href='${device.instruction}'>текстовую инструкцию</a>
+            `.format(), state.options);
+
+            return;
+        }
+
+        //выбор устройств для подключения
         if(query.data === 'instruction' && state.telegram){
-            bot.sendMessage(telegramId, config.service_instruction, state.options);
+            const {devices, options} = instructionOptions();
+            bot.sendMessage(telegramId, 'Какое у вас устройство ? 👇', options);
             return;
         }
 
@@ -578,8 +593,8 @@ bot.on('callback_query', async (query) => {
 //обработка соощений от пользователя
 bot.on('message', async (msg) => {
 
-    //просмотр id стикера
-    console.log(msg.sticker.file_id);
+    // //просмотр id стикера
+    // console.log(msg.sticker.file_id);
 
     //идентификатор пользователя
     const telegramId = msg.from.id;
@@ -633,9 +648,49 @@ bot.on('message', async (msg) => {
     }
 });
 
-//функция обработки нового пользователя
-function autoGiveFreeOffer(state, messageText){
-  
+//создание опций инструкции
+function instructionOptions(){
+    const devices = [
+        {
+            name: 'Android',
+            videoUrl: 'https://t.me/lightvpn_test/44?single',
+            instruction: 'https://docs.google.com/document/d/17c6bFx-AWRTZ_2HjutzQYSUGllZ6xIAb/edit#heading=h.30j0zll'
+        },
+        {
+            name: 'Aiphone IOS',
+            videoUrl: 'https://t.me/lightvpn_test/43?single',
+            instruction: 'https://docs.google.com/document/d/17c6bFx-AWRTZ_2HjutzQYSUGllZ6xIAb/edit#heading=h.1fob9te'
+        },
+        {
+            name: 'Windows',
+            videoUrl: 'https://t.me/lightvpn_test/42?single',
+            instruction: 'https://docs.google.com/document/d/17c6bFx-AWRTZ_2HjutzQYSUGllZ6xIAb/edit#heading=h.gjdgxs'
+        },
+        {
+            name: 'Linux',
+            videoUrl: null,
+            instruction: 'https://docs.google.com/document/d/17c6bFx-AWRTZ_2HjutzQYSUGllZ6xIAb/edit#heading=h.gjdgxs'
+        }
+    ];
+
+    //определение кнопок
+    const line_keybrd = devices.map(device => {
+        return ([{
+            text: device.name,
+            callback_data: `device_instruction=${device.name}`
+        }])
+    })
+
+    //добавление выхода
+    line_keybrd.push([{
+        text : 'Вернуться на главную ❌',
+        callback_data: 'main menu'
+    }])
+
+    //список опций для просмотра
+    const options = Buttons(line_keybrd)
+
+    return {options, devices};
 }
 
 //главное меню пользователя
