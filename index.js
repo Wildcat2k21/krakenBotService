@@ -51,8 +51,8 @@ String.prototype.format = function () {
 //     return options;
 // }
 
-//папка с ресурсами
-app.use(express.static(path.join(__dirname, 'public')));
+// //папка с ресурсами
+// app.use(express.static(path.join(__dirname, 'public')));
 
 //оповещение основных событий
 app.post('/notify' , (req, res) => {
