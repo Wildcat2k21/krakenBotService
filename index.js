@@ -33,6 +33,27 @@ String.prototype.format = function () {
     return this.replace(/ {2,}/g, ' ').replace(/((?=\n)\s+)|\n/g, '').replace(/\/n/g, '\n');
 }
 
+// //get all paths with *.mp4 in public/videos with fs
+// async function getVideoList() {
+//     const files = await fs.readdir('./public/videos');
+//     return files
+//         .filter(file => file.endsWith('.mp4'))
+//         .map(file => file.replace('.mp4', ''));
+// }
+
+// //создание опций инструкции
+// async function createInstructionOptions() {
+//     const videos = await getVideoList();
+//     const options = Buttons([[
+//         videos.map(video => ({ text: video, callback_data: `video=${video}` })),
+//     ]]);
+
+//     return options;
+// }
+
+//папка с ресурсами
+app.use(express.static(path.join(__dirname, 'public')));
+
 //оповещение основных событий
 app.post('/notify' , (req, res) => {
     const {users} = req.body;
@@ -43,7 +64,7 @@ app.post('/notify' , (req, res) => {
             const {id, message, control, withDefaultOptions} = user;
             
             //проверка данных
-            if(!id || !message) throw new Error('');
+            if(!id || !message) throw new Error('Не передан идентификатор или сообщение');
 
             //управление заявками для администратора
             if(control){
@@ -74,6 +95,15 @@ app.post('/notify' , (req, res) => {
 
             //использование опций
             const options = withDefaultOptions ? userStates.find(state => state.telegramId === id).default().options : {parse_mode: 'HTML'};
+
+            //прикреп стикера c сообщением
+            if(user.sticker) {
+                bot.sendMessage(id, message.format(), options).then(() => {
+                    bot.sendSticker(id, user.sticker)
+                });
+
+                return
+            }
 
             //отправка сообщения пользователю
             bot.sendMessage(id, message.format(), options);
@@ -163,7 +193,7 @@ app.get('/logs', async (req, res) => {
 });
 
 //запуск сервера
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
     console.clear();
     WriteInLogFile(`Сервер запущен на порту ${PORT} 👂`);
 });
@@ -418,6 +448,7 @@ bot.on('callback_query', async (query) => {
             await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке./n/n
                 <b>Или скопируйте строку подключения для импорта 👇</b>/n
                 <pre><code>${offerInfo.connString}</code></pre>/n/n
+                🌐 Статус: ${offerInfo.isExpired ? 'Подписка истекла ❌' : 'Подписка действует ✔️'}/n/n
                 💻 Вы можете подключить любое количество устройств/n/n
                 ℹ️ Название подписки: ${offerInfo.subName}/n/n
                 📶 Трафик: ${!offerInfo.subDataGBLimit  ? 'ထ' : offerInfo.subDataGBLimit} ГБ/n/n
@@ -547,6 +578,9 @@ bot.on('callback_query', async (query) => {
 //обработка соощений от пользователя
 bot.on('message', async (msg) => {
 
+    //просмотр id стикера
+    console.log(msg.sticker.file_id);
+
     //идентификатор пользователя
     const telegramId = msg.from.id;
     const state = userStates.find(item => item.telegramId === telegramId);
@@ -650,6 +684,7 @@ async function createNewoffer(state, onlyConnection){
             await bot.sendPhoto(telegramId, qrCodeBuffer, { caption: `QR-код для подключения по вашей подписке./n/n
                 <b>Или скопируйте строку подключения для импорта 👇</b>/n
                 <pre><code>${state.offerData.connection}</code></pre>/n/n
+                🌐 Статус: ${offerInfo.isExpired ? 'Подписка истекла ❌' : 'Подписка действует ✔️'}/n/n
                 💻 Вы можете подключить любое количество устройств/n/n
                 ℹ️ Название подписки: ${offerInfo.subName}/n/n
                 📶 Трафик: ${!offerInfo.subDataGBLimit  ? 'ထ' : offerInfo.subDataGBLimit} ГБ/n/n
