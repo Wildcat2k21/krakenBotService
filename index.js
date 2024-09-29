@@ -363,15 +363,17 @@ bot.on('callback_query', async (query) => {
             return
         }
 
+        //отмена заявки
+        if(query.data === 'cancel offer' && state.offerData){
+            await APIserver.REJECT_OFFER(state.offerData.offerId);
+            delete state.offerData;
+            state.default();
+            bot.sendMessage(telegramId, 'Вы на главной странице своего аккаунта ℹ️', state.options);
+            return
+        }
+
         //обработка на главную в случае отмены оплаты
         if(query.data === 'main menu' && state.telegram){
-            //если пользователь оформлял заказ и вышел на главную, то отменить заказ
-            if(state.offerData){
-                await APIserver.REJECT_OFFER(state.offerData.offerId);
-                delete state.offerData;
-            }
-
-            //сброс отпций и отправка сообщения
             state.default();
             bot.sendMessage(telegramId, 'Вы на главной странице своего аккаунта ℹ️', state.options);
             return
@@ -653,17 +655,17 @@ function instructionOptions(){
     const devices = [
         {
             name: 'Android',
-            videoUrl: 'https://t.me/lightvpn_test/44?single',
+            videoUrl: 'https://t.me/vpnnnn12345/4?single',
             instruction: 'https://docs.google.com/document/d/17c6bFx-AWRTZ_2HjutzQYSUGllZ6xIAb/edit#heading=h.30j0zll'
         },
         {
-            name: 'Aiphone IOS',
-            videoUrl: 'https://t.me/lightvpn_test/43?single',
+            name: 'iPhone IOS',
+            videoUrl: 'https://t.me/vpnnnn12345/3?single',
             instruction: 'https://docs.google.com/document/d/17c6bFx-AWRTZ_2HjutzQYSUGllZ6xIAb/edit#heading=h.1fob9te'
         },
         {
             name: 'Windows',
-            videoUrl: 'https://t.me/lightvpn_test/42?single',
+            videoUrl: 'https://t.me/vpnnnn12345/2?single',
             instruction: 'https://docs.google.com/document/d/17c6bFx-AWRTZ_2HjutzQYSUGllZ6xIAb/edit#heading=h.gjdgxs'
         },
         {
@@ -764,7 +766,7 @@ async function createNewoffer(state, onlyConnection){
         //пустые кнопки для подтверждения
         state.options = Buttons([
             [{ text: 'Готово 👌', callback_data: 'confirm payment' }],
-            [{ text: 'Отменить заявку ❌', callback_data: 'main menu' }],
+            [{ text: 'Отменить заявку ❌', callback_data: 'cancel offer' }],
         ]);
 
         // отправка изображения с текстом
