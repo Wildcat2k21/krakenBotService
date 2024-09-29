@@ -88,7 +88,7 @@ app.post('/notify' , (req, res) => {
             
             //использование опций
             if(withDefaultOptions){
-                notify.options = userStates.find(state => state.telegramId === id).default().options;
+                notify.options = mainMenuOptions();
             }
 
             //опции по умолчанию
@@ -594,9 +594,6 @@ bot.on('callback_query', async (query) => {
 
 //обработка соощений от пользователя
 bot.on('message', async (msg) => {
-
-    // //просмотр id стикера
-    // console.log(msg.sticker.file_id);
 
     //идентификатор пользователя
     const telegramId = msg.from.id;
